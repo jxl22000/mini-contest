@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Set up autograder files
+rm -f /autograder/source/code/myTeam.py /autograder/source/code/score
+cp -r /autograder/source/code_eval/* /autograder/source/code/
+
+# Copy student's submission
+cp -r /autograder/submission/myTeam.py /autograder/source/code/myTeam.py
+if [ -f /autograder/submission/weight.pth ]; then cp /autograder/submission/weight.pth /autograder/source/code/weight.pth; fi
+
+cd /autograder/source/code
+# PYTHONPATH=.:$PYTHONPATH python3 autograder.py
+PYTHONPATH=.:$PYTHONPATH python3 autograder.py 2>&1 | tee /autograder/results/output.txt
+cd /autograder/source/code
+python3 append_output.py
