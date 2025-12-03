@@ -45,6 +45,32 @@ def createTeam(firstIndex, secondIndex, isRed,
 # Agents #
 ##########
 
+from baselineTeam import ReflexCaptureAgent
+
+class BorderReflexAgent(ReflexCaptureAgent):
+  """
+  Agent that likes to play around the border. Will try to play offense to secure easy
+  points and is losing, and will play defense if winning.
+  """
+  def getFeatures(self, gameState, action):
+    features = util.Counter()
+    successor = self.getSuccessor(gameState, action)
+    foodList = self.getFood(successor).asList()    
+    features['successorScore'] = -len(foodList)#self.getScore(successor)
+
+    # Compute distance to the nearest food
+
+    if len(foodList) > 0: # This should always be True,  but better safe than sorry
+      myPos = successor.getAgentState(self.index).getPosition()
+      minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
+      features['distanceToFood'] = minDistance
+    return features
+
+  def getWeights(self, gameState, action):
+    return {'successorScore': 100, 'distanceToFood': -1}
+
+
+
 class DummyAgent(CaptureAgent):
   """
   A Dummy agent to serve as an example of the necessary agent structure.
