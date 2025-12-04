@@ -22,7 +22,7 @@ import game
 #################
 
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'DummyAgent', second = 'DummyAgent'):
+               first = 'BorderReflexAgent', second = 'BorderReflexAgent'):
   """
   This function should return a list of two agents that will form the
   team, initialized using firstIndex and secondIndex as their agent
@@ -49,9 +49,24 @@ from baselineTeam import ReflexCaptureAgent
 
 class BorderReflexAgent(ReflexCaptureAgent):
   """
-  Agent that likes to play around the border. Will try to play offense to secure easy
-  points and is losing, and will play defense if winning.
+  Offense and Defense border agent: prioritizes easy food and easy defense near the borders.
   """
+
+  def registerInitialState(self, gameState):
+    super().registerInitialState(gameState)
+
+    width = gameState.data.layout.width
+    if self.red:
+      self.borderX = width // 2 - 1
+    else:
+      self.borderX = width // 2
+
+    self.border = []
+
+    for y in range(gameState.data.layout.height):
+      if not gameState.hasWall(self.borderX, y):
+        self.border.append((self.borderX, y))
+    
   def getFeatures(self, gameState, action):
     features = util.Counter()
     successor = self.getSuccessor(gameState, action)
@@ -61,13 +76,114 @@ class BorderReflexAgent(ReflexCaptureAgent):
     # Compute distance to the nearest food
 
     if len(foodList) > 0: # This should always be True,  but better safe than sorry
-      myPos = successor.getAgentState(self.index).getPosition()
-      minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
+      pos = successor.getAgentState(self.index).getPosition()
+      minDistance = min([self.getMazeDistance(pos, food) for food in foodList])
       features['distanceToFood'] = minDistance
     return features
 
   def getWeights(self, gameState, action):
     return {'successorScore': 100, 'distanceToFood': -1}
+  
+  def isWinning(self, gameState):
+    return self.getScore(gameState) > 0
+  
+  def getDefensiveAction(self, gameState):
+    return None
+  
+  def getOffensiveAction(self, gameState):
+    return None
+  
+  def getFeatures(self, gameState, action):
+    features = util.Counter()
+    pos = gameState.getAgentPosition(self.index)
+
+    # Computes whether we're on defense (1) or offense (0)
+    features['onDefense'] = 1
+    if gameState.isPacman: features['onDefense'] = 0
+
+    # Computes distance to invaders we can see
+    enemies = [action.getAgentState(i) for i in self.getOpponents(action)]
+    invaders = [a for a in enemies if a.isPacman and a.getAgentPosition(self.index) is not None]
+    ghosts = [a for a in enemies if not a.isPacman and a.getAgentPosition(self.index) is not None]
+
+    if len(invaders) > 0:
+      features['defense'] = 1
+      dists = [self.getMazeDistance(pos, a.getAgentPosition(self.index)) for a in invaders]
+      features['invaderDistance'] = min(dists)
+    else:
+      features['defense'] = 1
+
+    # If there are no invaders, go to the border
+    if features['numInvaders'] == 0:
+      borderDists = [self.getMazeDistance(pos, borderPos) for borderPos in self.border]
+      features['borderDistance'] = min(borderDists)
+
+
+    foods = self.getFood(action).asList()
+    if len(foods) > 0:
+        closestFood = min([self.getMazeDistance(pos, f) for f in foods])
+    else:
+        closestFood = 0
+
+    features["foodDistance"] = closestFood
+
+
+    borderDist = min([self.getMazeDistance(pos, b) for b in self.border])
+    features["borderDistance"] = borderDist
+
+
+
+    if len(ghosts) > 0:
+      ghostpos = [g.getAgentPosition(self.index) for g in ghosts]
+      dists = [self.getMazeDistance(pos, p) for p in ghostpos]
+      features["ghostDistance"] = min(dists)
+
+    return features
+  
+  def getWeights(self, gameState, action):
+    return {
+      "modeDefense": 100,
+      "invaderDistance": -5,
+      "foodDistance": -3,
+      "borderDistance": -2,
+      "ghostDistance": 10
+    }
+
+  def chooseAction(self, gameState):
+    """
+    Picks among the actions with the highest Q(s,a).
+    """
+
+    actions = gameState.getLegalActions(self.index)
+    values = [self.evaluate(gameState, a) for a in actions]
+    return actions[values.index(max(values))]
+
+
+    # actions = gameState.getLegalActions(self.index)
+
+    # # You can profile your evaluation time by uncommenting these lines
+    # # start = time.time()
+    # values = [self.evaluate(gameState, a) for a in actions]
+    # # print 'eval time for agent %d: %.4f' % (self.index, time.time() - start)
+
+    # maxValue = max(values)
+    # bestActions = [a for a, v in zip(actions, values) if v == maxValue]
+
+    # foodLeft = len(self.getFood(gameState).asList())
+
+    # if foodLeft <= 2:
+    #   bestDist = 9999
+    #   for action in actions:
+    #     successor = self.getSuccessor(gameState, action)
+    #     pos2 = successor.getAgentPosition(self.index)
+    #     dist = self.getMazeDistance(self.start,pos2)
+    #     if dist < bestDist:
+    #       bestAction = action
+    #       bestDist = dist
+    #   return bestAction
+
+    # return random.choice(bestActions)
+
 
 
 
