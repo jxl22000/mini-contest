@@ -67,7 +67,7 @@ class BorderReflexAgent(ReflexCaptureAgent):
     for y in range(gameState.data.layout.height):
       if not gameState.hasWall(self.borderX, y):
         self.border.append((self.borderX, y))
-        
+
   def isWinning(self, gameState):
     return self.getScore(gameState) > 0
   
@@ -111,10 +111,6 @@ class BorderReflexAgent(ReflexCaptureAgent):
 
     features["foodDistance"] = closestFood
 
-
-    borderDist = min([self.getMazeDistance(myPos, b) for b in self.border])
-    features["borderDistance"] = borderDist
-
     if len(ghosts) > 0:
       ghostpos = [g.getPosition() for g in ghosts]
       dists = [self.getMazeDistance(myPos, p) for p in ghostpos]
@@ -124,7 +120,7 @@ class BorderReflexAgent(ReflexCaptureAgent):
   
   def getWeights(self, gameState, action):
     return {
-      "defense": 100,
+      "numInvaders": 1000,
       "invaderDistance": -5,
       "foodDistance": -3,
       "borderDistance": -2,
