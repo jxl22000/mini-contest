@@ -99,12 +99,15 @@ class BorderReflexAgent(ReflexCaptureAgent):
     successor = self.getSuccessor(gameState, action)
     myState = successor.getAgentState(self.index)
     myPos = myState.getPosition()
+    foodList = self.getFood(successor).asList()    
+
 
     # Computes distance to invaders we can see
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-    features['numInvaders'] = len(invaders)
     invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
     ghosts = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+    features['numInvaders'] = len(invaders)
+
 
     if len(invaders) > 0 and self.isWinning(gameState):
       features['defense'] = 1
@@ -115,27 +118,23 @@ class BorderReflexAgent(ReflexCaptureAgent):
 
     # If there are no invaders, go to the border
     if features['numInvaders'] == 0:
-      borderDists = [self.getMazeDistance(pos, borderPos) for borderPos in self.border]
+      borderDists = [self.getMazeDistance(myPos, borderPos) for borderPos in self.border]
       features['borderDistance'] = min(borderDists)
 
-
-    foods = self.getFood(action).asList()
-    if len(foods) > 0:
-        closestFood = min([self.getMazeDistance(pos, f) for f in foods])
+    if len(foodList) > 0:
+        closestFood = min([self.getMazeDistance(myPos, f) for f in foodList])
     else:
         closestFood = 0
 
     features["foodDistance"] = closestFood
 
 
-    borderDist = min([self.getMazeDistance(pos, b) for b in self.border])
+    borderDist = min([self.getMazeDistance(myPos, b) for b in self.border])
     features["borderDistance"] = borderDist
 
-
-
     if len(ghosts) > 0:
-      ghostpos = [g.getAgentPosition(self.index) for g in ghosts]
-      dists = [self.getMazeDistance(pos, p) for p in ghostpos]
+      ghostpos = [g.getPosition() for g in ghosts]
+      dists = [self.getMazeDistance(myPos, p) for p in ghostpos]
       features["ghostDistance"] = min(dists)
 
     return features
