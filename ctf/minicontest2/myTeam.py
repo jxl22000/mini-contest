@@ -67,24 +67,7 @@ class BorderReflexAgent(ReflexCaptureAgent):
     for y in range(gameState.data.layout.height):
       if not gameState.hasWall(self.borderX, y):
         self.border.append((self.borderX, y))
-    
-  def getFeatures(self, gameState, action):
-    features = util.Counter()
-    successor = self.getSuccessor(gameState, action)
-    foodList = self.getFood(successor).asList()    
-    features['successorScore'] = -len(foodList)#self.getScore(successor)
-
-    # Compute distance to the nearest food
-
-    if len(foodList) > 0: # This should always be True,  but better safe than sorry
-      pos = successor.getAgentState(self.index).getPosition()
-      minDistance = min([self.getMazeDistance(pos, food) for food in foodList])
-      features['distanceToFood'] = minDistance
-    return features
-
-  def getWeights(self, gameState, action):
-    return {'successorScore': 100, 'distanceToFood': -1}
-  
+        
   def isWinning(self, gameState):
     return self.getScore(gameState) > 0
   
@@ -141,7 +124,7 @@ class BorderReflexAgent(ReflexCaptureAgent):
   
   def getWeights(self, gameState, action):
     return {
-      "modeDefense": 100,
+      "defense": 100,
       "invaderDistance": -5,
       "foodDistance": -3,
       "borderDistance": -2,
