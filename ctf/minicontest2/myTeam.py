@@ -12,6 +12,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
+from turtle import pos
 from captureAgents import CaptureAgent
 import random, time, util
 from game import Directions
@@ -95,23 +96,22 @@ class BorderReflexAgent(ReflexCaptureAgent):
   
   def getFeatures(self, gameState, action):
     features = util.Counter()
-    pos = gameState.getAgentPosition(self.index)
-
-    # Computes whether we're on defense (1) or offense (0)
-    features['onDefense'] = 1
-    if gameState.isPacman: features['onDefense'] = 0
+    successor = self.getSuccessor(gameState, action)
+    myState = successor.getAgentState(self.index)
+    myPos = myState.getPosition()
 
     # Computes distance to invaders we can see
-    enemies = [action.getAgentState(i) for i in self.getOpponents(action)]
-    invaders = [a for a in enemies if a.isPacman and a.getAgentPosition(self.index) is not None]
-    ghosts = [a for a in enemies if not a.isPacman and a.getAgentPosition(self.index) is not None]
+    enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+    features['numInvaders'] = len(invaders)
+    invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
+    ghosts = [a for a in enemies if not a.isPacman and a.getPosition() != None]
 
-    if len(invaders) > 0:
+    if len(invaders) > 0 and self.isWinning(gameState):
       features['defense'] = 1
-      dists = [self.getMazeDistance(pos, a.getAgentPosition(self.index)) for a in invaders]
+      dists = [self.getMazeDistance(myPos, a.getPosition()) for a in invaders]
       features['invaderDistance'] = min(dists)
     else:
-      features['defense'] = 1
+      features['defense'] = 0
 
     # If there are no invaders, go to the border
     if features['numInvaders'] == 0:
